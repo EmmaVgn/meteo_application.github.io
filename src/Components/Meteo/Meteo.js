@@ -2,10 +2,13 @@ import styled from 'styled-components'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useSelector } from 'react-redux'
+import { timedbkey, weatherKey } from '../../API_KEY.js'
+
 
 const Container = styled.div`
     color : #fefefe;
     width : 80vw;
+    height : 50vh;
     position : absolute;
     left : 10vw;
     top : 25vh;
@@ -28,7 +31,6 @@ const DataBlock = styled.div`
 const TimeBlock = styled(DataBlock)`
     height : 20%
 `
-
 const DataSpan = styled.span`
     font-size : 2em;
     text-transform : uppercase;
@@ -37,7 +39,6 @@ const DataSpan = styled.span`
 const TempSpan = styled(DataSpan)`
     font-size : 3em
 `
-
 const City = styled.h1`
     font-size : 4.5em;
     display : flex;
@@ -47,45 +48,65 @@ const City = styled.h1`
     top : -20%
 `
 const IconWeather = styled.img`
-    width : 25%;
+    width : 20%;
 `
 
 export default function Meteo(){
 
     const [data, setData] = useState(false)
+    const [timeData, setTimeData] = useState(false)
     const [icon, setIcon] = useState(false)
-   
 
     const city = useSelector((state) => state.city.value)
     const lang = useSelector((state) => state.lang.value)
 
     useEffect(()=>{
         getWeather()
-    },[])
+    },[lang, city])
 
     useEffect(()=>{
         if(data){
             setIcon(`https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`) 
-         }
+            getTimeZone()
+        }
     },[data])
 
-
     const getWeather = ()=>{
-        if(city && lang){
-            const units = lang === 'fr' ? 'metric' : 'imperial'
-            const url = 'https://api.openweathermap.org/data/2.5/weather?q=' 
-                + city + '&appid=' + process.env.REACT_APP_WEATHER_KEY + '&lang='
-                + lang +'&units=' + units 
 
-            axios.get(url).then((res)=> setData(res.data))  
+        let units 
+        lang === 'fr' ? units = 'metric' : units = 'imperial'
+
+        const url = 'https://api.openweathermap.org/data/2.5/weather?q=' 
+            + city + '&appid=' + weatherKey + '&lang='
+            + lang +'&units=' + units 
+        
+        axios.get(url).then((res)=> setData(res.data))
+            .catch((error)=>{
+                if( error.response && error.response.status === 404){
+                    alert('Erreur: Ville non trouvée')
+                }
+                else{
+                    alert(`Une erreur s'est produite: ` + error.message )
+                }
+            })
+    }
+
+    const getTimeZone = ()=>{
+        if(data){
+            const url = 'https://api.timezonedb.com/v2.1/get-time-zone?key='
+            + timedbkey + '&format=json&by=position&lat='
+            + data.coord.lat + '&lng=' + data.coord.lon
+
+            axios.get(url).then((res)=> setTimeData(res.data))
                 .catch((error)=>{
-                    if (error.response && error.response.status === 404) {
-                        alert('Erreur : Ville non trouvée')
-                    } else {
-                        alert('Une erreur s\'est produite: ' + error.message)
+                    if(error.response && error.response.status === 404){
+                        alert('Erreur: Donnée temporel non trouvée!')
+                    }
+                    else{
+                        alert(`Une erreur s'est produite: ` + error.message )
                     }
                 })
-        }                
+        }
     }
 
 
@@ -95,7 +116,7 @@ export default function Meteo(){
                 
             <TimeBlock>
                 <DataSpan>
-                    Date & Heure
+                    {timeData && timeData.formatted}
                 </DataSpan>
             </TimeBlock>
 

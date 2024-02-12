@@ -1,4 +1,7 @@
+import { useEffect, useRef, useState } from 'react'
 import styled from 'styled-components'
+import { setLang } from '../../Redux/langSlice'
+import { useSelector, useDispatch } from 'react-redux'
 
 const Container = styled.div`
     display: flex;
@@ -35,15 +38,47 @@ const Lang = styled.div`
 `   
 
 export default function Header(){
+
+    const langFR = useRef()
+    const langEN = useRef()
+    
+    const lang = useSelector((state) => state.lang.value)
+
+    const dispatch = useDispatch()
+
+    const [activeLang, setActiveLang] = useState(false)
+
+    const changeLang = () => {
+        activeLang === langFR.current ? setActiveLang(langEN.current) : setActiveLang(langFR.current)
+    }
+
+    useEffect(() => {
+        setActiveLang(langFR.current)
+    },[])
+
+    useEffect(() => {
+        if(activeLang === langFR.current){
+            langFR.current.style.oppacity = 1
+            langEN.current.style.oppacity = 0.4
+            dispatch(setLang('fr'))
+        }
+        else if(activeLang === langEN.current){
+            langEN.current.style.oppacity = 1
+            langFR.current.style.oppacity = 0.4
+            dispatch(setLang('en'))
+        }
+    }, [activeLang])
+
+
     return(
         <Container>
             <Title>
-               Application météo
+                {lang === 'fr'? 'Application Météo' : 'Weather Application'}
             </Title>
-            <Lang>
-                <span>FR</span>
+            <Lang onClick={changeLang}>
+                <span ref={langFR}>FR</span>
                 <span>-</span>
-                <span>EN</span>
+                <span ref={langEN}>EN</span>
             </Lang>
         </Container>
     )
